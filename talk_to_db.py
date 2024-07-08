@@ -1,3 +1,4 @@
+from langchain.chains.sql_database.query import create_sql_query_chain
 from langchain_community.agent_toolkits.sql.base import create_sql_agent
 from langchain_community.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
 from langchain.agents.agent_types import AgentType
@@ -25,7 +26,6 @@ db_port = os.getenv('POSTGRES_PORT')
 db_name = os.getenv('POSTGRES_DB')
 openai_key = os.getenv('OPENAI_API_KEY')
 
-# Construct the database URI
 db_uri = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 model_name = "gpt-3.5-turbo"
 
@@ -43,16 +43,21 @@ chain = create_sql_agent(
     agent_type=AgentType.OPENAI_FUNCTIONS
 )
 
-# sql_query = chain.invoke({"question": "What is my data about?"})
-# print(sql_query)
+sql_chain = create_sql_query_chain(
+    llm = ChatOpenAI(
+        temperature=0,
+        model=model_name
+    ),
+    db=SQLDatabase.from_uri(db_uri)
+)
 
-# Print the prompt in a different color
 print(f"{Fore.GREEN}What do you want to know about the database?{Style.RESET_ALL}")
-
-# Prompt user for a question
 user_question = input()
 
-# Use user input as prompt for LangChain agent
 result = chain.invoke(user_question)
+sql_query_result = sql_chain.invoke({"question":user_question})
+
+print(f"\n{Fore.GREEN}Query:{Style.RESET_ALL}")
+print(sql_query_result)
 print(f"\n{Fore.GREEN}Response:{Style.RESET_ALL}")
 print(result["output"])
